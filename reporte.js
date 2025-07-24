@@ -23,7 +23,7 @@ const isoStart = start.toISOString(); // "2025-07-19T03:00:00.000Z" (ejemplo)
 const isoEnd   = end.toISOString(); 
 
   const paramsBase = {
-    status: ["completed", "processing", "pending"],
+    status: ["completed", "processing", "on-hold"],
     after: isoStart,   // último sábado 00:00
     before: isoEnd, // ahora
     per_page: 100,
