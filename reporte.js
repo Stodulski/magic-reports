@@ -95,7 +95,7 @@ async function countSalesByCharacter() {
     const fuente = order.meta_data.find(
       (item) => item.key === '_wc_order_attribution_utm_source'
     );
-    const orderId = order.number 
+    const orderId = order.number
     const localidad = order?.shipping.city || "Sin localidad"
     const orderResult = {
       orderId,
@@ -216,13 +216,23 @@ export default async function generarYEnviarReporteExcel() {
       }
     });
 
+    const now = new Date();
+    const day = now.getDay();
+    const daysToLastSaturday = (day + 1) % 7;
+    const start = new Date(now);
+    start.setDate(now.getDate() - daysToLastSaturday);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    const formattedStart = start.toLocaleDateString('es-AR')
+    const formattedEnd = end.toLocaleDateString('es-AR')
+
     await transporter.sendMail({
       from: `"Magic Store" <${process.env.EMAIL_FROM}>`,
       to: process.env.EMAIL_TO,
       subject: 'Reporte semanal de ventas - Magic Store',
-      text: 'Hola! Adjunto el reporte semanal en formato Excel.',
+      text: `Hola! Adjunto el reporte semanal en formato Excel. Fecha: ${formattedStart + "-" + formattedEnd}`,
       attachments: [{
-        filename: 'reporte_magicstore.xlsx',
+        filename: `${formattedStart.replace(/\//g, '-') + "_" + formattedEnd.replace(/\//g, '-')}.xlsx`,
         content: buffer,
         contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       }]
@@ -232,3 +242,4 @@ export default async function generarYEnviarReporteExcel() {
     console.error('❌ Error al generar o enviar el Excel:', error.message);
   }
 }
+
