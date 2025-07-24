@@ -236,7 +236,7 @@ export default async function generarYEnviarReporteExcel() {
     // Formateo DD/MM/YYYY en locale argentino
     const formattedStart = start.toLocaleDateString('es-AR');  // ej. "19/07/2025"
     const formattedEnd = end.toLocaleDateString('es-AR');    // ej. "25/07/2025"
-
+console.log(formattedEnd)
     // Armo y envío el mail
     await transporter.sendMail({
       from: `"Magic Store" <${process.env.EMAIL_FROM}>`,
