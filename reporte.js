@@ -4,26 +4,30 @@ import ExcelJS from 'exceljs';
 
 async function getAllOrders() {
   const now = new Date();
-  const day = now.getDay();
-  // Calcula cuántos días restar para llegar al último sábado (6)
-  const daysToLastSaturday = (day + 1) % 7;
+const day = now.getDay();
+// Días a retroceder para llegar al último sábado (6)
+const daysToLastSaturday = (day + 1) % 7;
 
-  // Último sábado a las 00:00 (hora local)
-  const start = new Date(now);
-  start.setDate(now.getDate() - daysToLastSaturday);
-  start.setHours(0, 0, 0, 0);
-  const isoAfter = start.toISOString();
+// 1) Calcular el sábado 00:00
+const start = new Date(now);
+start.setDate(start.getDate() - daysToLastSaturday);
+start.setHours(0, 0, 0, 0);
 
-  // Momento actual
-  const isoBefore = now.toISOString();
+// 2) Calcular el viernes siguiente a las 23:59:59.999
+const end = new Date(start);
+end.setDate(end.getDate() + 6);
+end.setHours(23, 59, 59, 999);
+
+// 4) Fechas en ISO
+const isoStart = start.toISOString(); // "2025-07-19T03:00:00.000Z" (ejemplo)
+const isoEnd   = end.toISOString(); 
 
   const paramsBase = {
     status: ["completed", "processing", "pending"],
-    after: isoAfter,   // último sábado 00:00
-    before: isoBefore, // ahora
+    after: isoStart,   // último sábado 00:00
+    before: isoEnd, // ahora
     per_page: 100,
   };
-
   let allOrders = [];
   let page = 1;
   let totalPages = 1;
