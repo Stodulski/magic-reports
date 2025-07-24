@@ -219,24 +219,33 @@ export default async function generarYEnviarReporteExcel() {
     });
 
     const now = new Date();
-    const day = now.getDay();
-    // Días a retroceder para llegar al último sábado (6)
-    const daysToLastSaturday = (day + 1) % 7;
+const day = now.getDay();
+// Días a retroceder para llegar al último sábado (6)
+const daysToLastSaturday = (day + 1) % 7;
 
-    // Último sábado a las 00:00
-    const start = new Date(now);
-    start.setDate(now.getDate() - daysToLastSaturday);
-    start.setHours(0, 0, 0, 0);
+// 1) Calcular el sábado 00:00
+const start = new Date(now);
+start.setDate(start.getDate() - daysToLastSaturday);
+start.setHours(0, 0, 0, 0);
 
-    // Viernes siguiente a las 23:59:59.999
-    const end = new Date(start);
-    end.setDate(start.getDate() + 6);
-    end.setHours(23, 59, 59, 999);
+// 2) Calcular el viernes siguiente a las 23:59:59.999
+const end = new Date(start);
+end.setDate(end.getDate() + 6);
+end.setHours(23, 59, 59, 999);
 
-    // Formateo DD/MM/YYYY en locale argentino
-    const formattedStart = start.toLocaleDateString('es-AR');  // ej. "19/07/2025"
-    const formattedEnd = end.toLocaleDateString('es-AR');    // ej. "25/07/2025"
-console.log(formattedEnd)
+// 3) Función de formateo DD/MM/YYYY con ceros a la izquierda
+const pad = num => String(num).padStart(2, '0');
+const formatDDMMYYYY = date => {
+  const d = pad(date.getDate());
+  const m = pad(date.getMonth() + 1);
+  const y = date.getFullYear();
+  return `${d}/${m}/${y}`;
+};
+
+const formattedStart = formatDDMMYYYY(start); // ej. "19/07/2025"
+const formattedEnd   = formatDDMMYYYY(end);   // ej. "25/07/2025"
+
+console.log(formattedStart, formattedEnd);
     // Armo y envío el mail
     await transporter.sendMail({
       from: `"Magic Store" <${process.env.EMAIL_FROM}>`,
