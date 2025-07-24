@@ -5,20 +5,22 @@ import ExcelJS from 'exceljs';
 async function getAllOrders() {
   const now = new Date();
   const day = now.getDay();
+  // Calcula cuántos días restar para llegar al último sábado (6)
   const daysToLastSaturday = (day + 1) % 7;
+
+  // Último sábado a las 00:00 (hora local)
   const start = new Date(now);
   start.setDate(now.getDate() - daysToLastSaturday);
   start.setHours(0, 0, 0, 0);
-  const end = new Date(start);
-  end.setDate(end.getDate() + 6);
-  end.setHours(23, 59, 59, 999);
-  const isoStart = start.toISOString();
-  const isoEnd = end.toISOString();
+  const isoAfter = start.toISOString();
+
+  // Momento actual
+  const isoBefore = now.toISOString();
 
   const paramsBase = {
     status: ["completed", "processing", "pending"],
-    after: isoStart,
-    before: isoEnd,
+    after: isoAfter,   // último sábado 00:00
+    before: isoBefore, // ahora
     per_page: 100,
   };
 
@@ -218,21 +220,31 @@ export default async function generarYEnviarReporteExcel() {
 
     const now = new Date();
     const day = now.getDay();
+    // Días a retroceder para llegar al último sábado (6)
     const daysToLastSaturday = (day + 1) % 7;
+
+    // Último sábado a las 00:00
     const start = new Date(now);
     start.setDate(now.getDate() - daysToLastSaturday);
     start.setHours(0, 0, 0, 0);
-    const end = new Date(start);
-    const formattedStart = start.toLocaleDateString('es-AR')
-    const formattedEnd = end.toLocaleDateString('es-AR')
 
+    // Viernes siguiente a las 23:59:59.999
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+
+    // Formateo DD/MM/YYYY en locale argentino
+    const formattedStart = start.toLocaleDateString('es-AR');  // ej. "19/07/2025"
+    const formattedEnd = end.toLocaleDateString('es-AR');    // ej. "25/07/2025"
+
+    // Armo y envío el mail
     await transporter.sendMail({
       from: `"Magic Store" <${process.env.EMAIL_FROM}>`,
       to: process.env.EMAIL_TO,
-      subject: 'Reporte semanal de ventas - Magic Store',
-      text: `Hola! Adjunto el reporte semanal en formato Excel. Fecha: ${formattedStart + "-" + formattedEnd}`,
+      subject: `Reporte semanal de ventas - Magic Store (${formattedStart} - ${formattedEnd})`,
+      text: `¡Hola! Adjunto el reporte semanal en formato Excel.\nPeríodo: ${formattedStart} - ${formattedEnd}`,
       attachments: [{
-        filename: `${formattedStart.replace(/\//g, '-') + "_" + formattedEnd.replace(/\//g, '-')}.xlsx`,
+        filename: `${formattedStart.replace(/\//g, '-')}_${formattedEnd.replace(/\//g, '-')}.xlsx`,
         content: buffer,
         contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       }]
@@ -242,4 +254,5 @@ export default async function generarYEnviarReporteExcel() {
     console.error('❌ Error al generar o enviar el Excel:', error.message);
   }
 }
+
 
