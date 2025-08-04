@@ -1,33 +1,42 @@
+
 import axios from 'axios';
 import nodemailer from 'nodemailer';
 import ExcelJS from 'exceljs';
 
 async function getAllOrders() {
-  const now = new Date();
-const day = now.getDay();
-// Días a retroceder para llegar al último sábado (6)
-const daysToLastSaturday = (day + 1) % 7;
+ const now = new Date();
 
-// 1) Calcular el sábado 00:00
-const start = new Date(now);
-start.setDate(start.getDate() - daysToLastSaturday);
-start.setHours(0, 0, 0, 0);
+  const afterDate = new Date(now);
+  afterDate.setDate(now.getDate() - 7);
 
-// 2) Calcular el viernes siguiente a las 23:59:59.999
-const end = new Date(start);
-end.setDate(end.getDate() + 6);
-end.setHours(23, 59, 59, 999);
+  const offsetAR = -3 * 60; 
+  const ajustarAR = (fecha) => {
+    const f = new Date(fecha.getTime() + (offsetAR - fecha.getTimezoneOffset()) * 60000);
+    return f.toISOString().replace("Z", "-03:00");
+  };
 
-// 4) Fechas en ISO
-const isoStart = start.toISOString(); // "2025-07-19T03:00:00.000Z" (ejemplo)
-const isoEnd   = end.toISOString(); 
+  const formatearDDMMYYYY = (fecha) => {
+    const f = new Date(fecha.getTime() + (offsetAR - fecha.getTimezoneOffset()) * 60000);
+    const dia = String(f.getDate()).padStart(2, "0");
+    const mes = String(f.getMonth() + 1).padStart(2, "0");
+    const anio = f.getFullYear();
+    return `${dia}-${mes}-${anio}`;
+  };
+
+  // Valores en ambos formatos
+  const after = ajustarAR(afterDate);
+  const before = ajustarAR(now);
+
+  const afterSimple = formatearDDMMYYYY(afterDate);
+  const beforeSimple = formatearDDMMYYYY(now);
 
   const paramsBase = {
-    status: ["completed", "processing", "on-hold"],
-    after: isoStart,   // último sábado 00:00
-    before: isoEnd, // ahora
+    status: ["completed", "processing", "pending"],
+    after: after,
+    before: before,
     per_page: 100,
   };
+
   let allOrders = [];
   let page = 1;
   let totalPages = 1;
@@ -146,7 +155,6 @@ async function countSalesByCharacter() {
 export default async function generarYEnviarReporteExcel() {
   try {
     const result = await countSalesByCharacter()
-    console.log(result[1])
 
     const workbook = new ExcelJS.Workbook();
 
@@ -223,41 +231,31 @@ export default async function generarYEnviarReporteExcel() {
     });
 
     const now = new Date();
-const day = now.getDay();
-// Días a retroceder para llegar al último sábado (6)
-const daysToLastSaturday = (day + 1) % 7;
 
-// 1) Calcular el sábado 00:00
-const start = new Date(now);
-start.setDate(start.getDate() - daysToLastSaturday);
-start.setHours(0, 0, 0, 0);
+  const afterDate = new Date(now);
+  afterDate.setDate(now.getDate() - 7);
 
-// 2) Calcular el viernes siguiente a las 23:59:59.999
-const end = new Date(start);
-end.setDate(end.getDate() + 6);
-end.setHours(23, 59, 59, 999);
+  const offsetAR = -3 * 60; 
 
-// 3) Función de formateo DD/MM/YYYY con ceros a la izquierda
-const pad = num => String(num).padStart(2, '0');
-const formatDDMMYYYY = date => {
-  const d = pad(date.getDate());
-  const m = pad(date.getMonth() + 1);
-  const y = date.getFullYear();
-  return `${d}/${m}/${y}`;
-};
+  const formatearDDMMYYYY = (fecha) => {
+    const f = new Date(fecha.getTime() + (offsetAR - fecha.getTimezoneOffset()) * 60000);
+    const dia = String(f.getDate()).padStart(2, "0");
+    const mes = String(f.getMonth() + 1).padStart(2, "0");
+    const anio = f.getFullYear();
+    return `${dia}-${mes}-${anio}`;
+  };
 
-const formattedStart = formatDDMMYYYY(start); // ej. "19/07/2025"
-const formattedEnd   = formatDDMMYYYY(end);   // ej. "25/07/2025"
+  const afterSimple = formatearDDMMYYYY(afterDate);
+  const beforeSimple = formatearDDMMYYYY(now);
 
-console.log(formattedStart, formattedEnd);
-    // Armo y envío el mail
+
     await transporter.sendMail({
       from: `"Magic Store" <${process.env.EMAIL_FROM}>`,
       to: process.env.EMAIL_TO,
-      subject: `Reporte semanal de ventas - Magic Store (${formattedStart} - ${formattedEnd})`,
-      text: `¡Hola! Adjunto el reporte semanal en formato Excel.\nPeríodo: ${formattedStart} - ${formattedEnd}`,
+      subject: `Reporte semanal de ventas ${afterSimple + " - "  + beforeSimple} - Magic Store`,
+      text: `Hola! Adjunto el reporte semanal, fecha: ${afterSimple + " - "  + beforeSimple}`,
       attachments: [{
-        filename: `${formattedStart.replace(/\//g, '-')}_${formattedEnd.replace(/\//g, '-')}.xlsx`,
+        filename: `${afterSimple + " - "  + beforeSimple}.xlsx`,
         content: buffer,
         contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       }]
@@ -267,5 +265,4 @@ console.log(formattedStart, formattedEnd);
     console.error('❌ Error al generar o enviar el Excel:', error.message);
   }
 }
-
 
